@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -238,3 +239,26 @@ async def analyze_labs(request: AnalyzeLabsRequest) -> JSONResponse:
             f"The triage agent could not complete: {type(exc).__name__}: {exc}"
         )
         return JSONResponse(status_code=200, content=payload)
+
+
+# --------------------------------------------------------------------------
+# Static frontend (single-service deployment)
+# --------------------------------------------------------------------------
+# If a built frontend is present, serve it from this same app. That makes the
+# API same-origin with the page, so the deployed frontend needs no baked-in
+# backend URL and no CORS configuration — the two things most likely to be
+# misconfigured across a two-service deploy.
+#
+# Mounted LAST so it cannot shadow /analyze_labs, /health or /mcp_tools:
+# Starlette matches routes in registration order. Absent in local dev, where
+# Vite serves the frontend on :5173 instead.
+FRONTEND_DIST = Path(
+    os.getenv("FRONTEND_DIST", str(REPO_ROOT / "frontend" / "dist"))
+)
+
+if (FRONTEND_DIST / "index.html").is_file():
+    app.mount(
+        "/",
+        StaticFiles(directory=str(FRONTEND_DIST), html=True),
+        name="frontend",
+    )

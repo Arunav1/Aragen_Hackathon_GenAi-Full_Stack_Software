@@ -1,56 +1,28 @@
-# Render blueprint: the FastAPI backend and the static React frontend.
+# Render blueprint — ONE service that serves both the API and the frontend.
 #
-# Deploy with Render -> New -> Blueprint -> pick this repo. Render reads this
-# file and creates both services. The only manual step is pasting the Gemini
-# key, which is deliberately NOT in this file.
+# Deploy: Render -> New -> Blueprint -> pick this repo -> Apply.
+# The only manual step is pasting GEMINI_API_KEY; nothing else needs setting.
 #
-# The backend runs as a normal container, so the agent can keep spawning the
-# MCP server as a stdio subprocess per request exactly as it does locally.
+# A split frontend/backend deploy needs VITE_API_BASE baked in at build time and
+# CORS configured to match. Both are easy to miss, and missing either leaves the
+# deployed page calling 127.0.0.1. Serving the built frontend from the API
+# process makes them same-origin and removes both settings.
+#
+# Docker rather than a native runtime because the build needs Node (frontend)
+# and Python (API), and because the agent spawns the MCP server as a stdio
+# subprocess per request.
 
 services:
-  # ---------------------------------------------------------------- backend
   - type: web
-    name: lab-triage-api
-    runtime: python
+    name: lab-triage
+    runtime: docker
+    dockerfilePath: ./Dockerfile
     plan: free
     region: oregon
     branch: main
-    buildCommand: pip install -r backend/requirements.txt
-    # $PORT is supplied by Render. Bind 0.0.0.0, not 127.0.0.1, or the
-    # platform health check cannot reach the process.
-    startCommand: uvicorn main:app --app-dir backend --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.12.7"          # FastMCP and LangGraph need >= 3.10
       - key: GEMINI_API_KEY
-        sync: false              # set in the dashboard; never committed
+        sync: false                    # set in the dashboard; never committed
       - key: GEMINI_MODEL
-        value: gemini-3.1-flash-lite
-      - key: CORS_ORIGINS
-        sync: false              # set to the frontend URL after its first deploy
-
-  # --------------------------------------------------------------- frontend
-  - type: web
-    name: lab-triage-web
-    runtime: static
-    plan: free
-    branch: main
-    buildCommand: cd frontend && npm ci && npm run build
-    staticPublishPath: frontend/dist
-    envVars:
-      - key: VITE_API_BASE
-        sync: false              # set to the backend URL, e.g.
-                                 # https://lab-triage-api.onrender.com
-    routes:
-      # Single-page app: unknown paths fall back to index.html.
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    headers:
-      - path: /*
-        name: X-Content-Type-Options
-        value: nosniff
-      - path: /*
-        name: Referrer-Policy
-        value: strict-origin-when-cross-origin
+        value: gemini-3.1-flash-lite   # avoid non-lite flash: 20 req/day free cap

@@ -22,7 +22,9 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-load_dotenv(REPO_ROOT / ".env")
+# In production the key comes from the host's environment, so a missing .env
+# is normal rather than an error.
+load_dotenv(REPO_ROOT / ".env", override=False)
 
 import agent  # noqa: E402  (must follow load_dotenv so the LLM sees the key)
 
@@ -40,14 +42,30 @@ app = FastAPI(
     ),
 )
 
+# CORS. The dev origins are always allowed; deployed frontends are added via
+# the CORS_ORIGINS env var (comma-separated). Without this the hosted frontend
+# would be blocked by the browser even though the API itself works.
+DEV_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:4173",
+    "http://127.0.0.1:4173",
+]
+EXTRA_ORIGINS = [
+    o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()
+]
+
+# Preview deployments get a fresh subdomain per commit, so allow them by
+# pattern rather than needing a redeploy for every new preview URL.
+ORIGIN_REGEX = os.getenv(
+    "CORS_ORIGIN_REGEX",
+    r"https://.*\.(vercel\.app|netlify\.app|onrender\.com)",
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:4173",
-        "http://127.0.0.1:4173",
-    ],
+    allow_origins=DEV_ORIGINS + EXTRA_ORIGINS,
+    allow_origin_regex=ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

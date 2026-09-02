@@ -94,6 +94,19 @@ Open http://localhost:5173 and click **Load example**, then **Analyze**. Or clic
 
 ---
 
+## Deployment
+
+See **[DEPLOYMENT.md](DEPLOYMENT.md)**. The repo ships a Render blueprint
+([`render.yaml`](render.yaml)) that provisions both the API and the static
+frontend, plus a [`Dockerfile`](Dockerfile) for any container host and configs for
+Vercel and Netlify.
+
+CORS, `PORT` and the frontend's API base URL are all environment-driven. Note the
+backend needs a **container, not a serverless function** — the agent spawns the MCP
+server as a stdio subprocess per request.
+
+---
+
 ## Architecture
 
 ```

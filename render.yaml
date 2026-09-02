@@ -1,0 +1,56 @@
+# Render blueprint: the FastAPI backend and the static React frontend.
+#
+# Deploy with Render -> New -> Blueprint -> pick this repo. Render reads this
+# file and creates both services. The only manual step is pasting the Gemini
+# key, which is deliberately NOT in this file.
+#
+# The backend runs as a normal container, so the agent can keep spawning the
+# MCP server as a stdio subprocess per request exactly as it does locally.
+
+services:
+  # ---------------------------------------------------------------- backend
+  - type: web
+    name: lab-triage-api
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: pip install -r backend/requirements.txt
+    # $PORT is supplied by Render. Bind 0.0.0.0, not 127.0.0.1, or the
+    # platform health check cannot reach the process.
+    startCommand: uvicorn main:app --app-dir backend --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"          # FastMCP and LangGraph need >= 3.10
+      - key: GEMINI_API_KEY
+        sync: false              # set in the dashboard; never committed
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-lite
+      - key: CORS_ORIGINS
+        sync: false              # set to the frontend URL after its first deploy
+
+  # --------------------------------------------------------------- frontend
+  - type: web
+    name: lab-triage-web
+    runtime: static
+    plan: free
+    branch: main
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_BASE
+        sync: false              # set to the backend URL, e.g.
+                                 # https://lab-triage-api.onrender.com
+    routes:
+      # Single-page app: unknown paths fall back to index.html.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin

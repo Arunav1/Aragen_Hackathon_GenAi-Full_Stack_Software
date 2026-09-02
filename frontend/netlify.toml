@@ -1,0 +1,10 @@
+[build]
+  base    = "frontend"
+  command = "npm run build"
+  publish = "frontend/dist"
+
+# Single-page app: unknown paths serve index.html.
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

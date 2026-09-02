@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+
 const isNum = (n) => typeof n === 'number' && Number.isFinite(n)
 
 /**
@@ -9,6 +11,15 @@ const isNum = (n) => typeof n === 'number' && Number.isFinite(n)
  * gauge shows amber running to the edge rather than inventing a red zone.
  */
 export default function RangeGauge({ value, unit, reference }) {
+  // One frame after mount, flip to `ready` so the bar fills and the marker
+  // eases out from the middle of the normal band to where the value actually
+  // sits. CSS handles the easing; nothing here delays the data appearing.
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
   const ref = reference || {}
   const nl = isNum(ref.normal_low) ? ref.normal_low : null
   const nh = isNum(ref.normal_high) ? ref.normal_high : null
@@ -73,17 +84,24 @@ export default function RangeGauge({ value, unit, reference }) {
   // Keep the value label inside the track when the marker sits at an edge.
   const markerShift = (p) => (p > 88 ? '-85%' : p < 12 ? '-15%' : '-50%')
 
+  // Marker rest position before the animation runs: the middle of the normal
+  // band, so it visibly travels out to an abnormal value.
+  const restPos = pct((nl + nh) / 2)
+  const targetPos = val !== null ? pct(val) : restPos
+
   return (
-    <div className="gauge">
+    <div className={`gauge${ready ? ' gauge-ready' : ''}`}>
       <div className="gauge-track">
-        {zones.map((z) => (
-          <div key={z.key} className={`gauge-zone ${z.cls}`} style={z.style} />
-        ))}
+        <div className="gauge-zones">
+          {zones.map((z) => (
+            <div key={z.key} className={`gauge-zone ${z.cls}`} style={z.style} />
+          ))}
+        </div>
         {ticks.map((t, i) => (
           <div key={i} className="gauge-tick" style={{ left: `${t.pos}%` }} />
         ))}
         {val !== null && (
-          <div className="gauge-marker" style={{ left: `${pct(val)}%` }}>
+          <div className="gauge-marker" style={{ left: `${ready ? targetPos : restPos}%` }}>
             <div className="gauge-marker-line" />
             <div
               className="gauge-marker-label"

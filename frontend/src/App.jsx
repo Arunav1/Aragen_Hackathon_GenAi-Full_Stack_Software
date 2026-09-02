@@ -5,6 +5,33 @@ import PipelineView from './components/PipelineView.jsx'
 import PanelInsights from './components/PanelInsights.jsx'
 import { analyzeLabs, API_BASE } from './api.js'
 
+/** Placeholder cards shaped like the real ones, so the ~1s Gemini wait reads
+ *  as the result loading in rather than as an empty pause. */
+function ResultsSkeleton() {
+  return (
+    <section className="panel" aria-busy="true" aria-label="Analyzing lab results">
+      <div className="panel-head">
+        <h2>Analyzing…</h2>
+        <span className="hint">
+          Classifying over MCP, then one batched Gemini call for every explanation.
+        </span>
+      </div>
+      <div className="card-grid">
+        {[0, 1, 2].map((i) => (
+          <div className="card card-skeleton" key={i}>
+            <div className="sk sk-title" />
+            <div className="sk sk-value" />
+            <div className="sk sk-gauge" />
+            <div className="sk sk-block" />
+            <div className="sk sk-line" />
+            <div className="sk sk-line sk-short" />
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export default function App() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -44,7 +71,8 @@ export default function App() {
         </div>
       </header>
 
-      {/* The assignment's key constraint, as a designed element rather than fine print. */}
+      {/* The assignment's key constraint: a designed, sticky element rather
+          than fine print, so it stays visible while scrolling results. */}
       <div className="disclaimer" role="note">
         <span className="disclaimer-icon" aria-hidden="true">⚕</span>
         <div>
@@ -59,18 +87,7 @@ export default function App() {
       <main className="content">
         <LabInput onAnalyze={handleAnalyze} loading={loading} />
 
-        {loading && (
-          <div className="panel state-panel">
-            <div className="spinner" aria-hidden="true" />
-            <div>
-              <h3>Running the agent…</h3>
-              <p className="hint">
-                Classifying over MCP, then one batched Gemini call for all
-                explanations. Usually a few seconds.
-              </p>
-            </div>
-          </div>
-        )}
+        {loading && <ResultsSkeleton />}
 
         {error && (
           <div className="panel state-panel state-error" role="alert">

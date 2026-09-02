@@ -1,11 +1,12 @@
+import { useState } from 'react'
 import SeverityBadge from './SeverityBadge.jsx'
 import RangeGauge from './RangeGauge.jsx'
 
-const GROUPS = [
+/** Statuses that were actually scored against a reference range. */
+const SCORED = [
   { status: 'critical', title: 'Critical', icon: '🚨' },
   { status: 'warning', title: 'Warning', icon: '⚠️' },
   { status: 'normal', title: 'Normal', icon: '✓' },
-  { status: 'unknown', title: 'Not triaged', icon: '?' },
 ]
 
 const SOURCE_LABEL = {
@@ -18,7 +19,7 @@ function ResultCard({ result }) {
   return (
     <article className={`card card-${result.status}`}>
       <header className="card-head">
-        <div>
+        <div className="card-ident">
           <h4>{result.display_name || result.test_name || '(unnamed test)'}</h4>
           <p className="card-value">
             {result.value === null || result.value === '' ? '—' : String(result.value)}
@@ -60,41 +61,126 @@ function ResultCard({ result }) {
   )
 }
 
+function FilterChip({ kind, count, label, icon, active, onClick }) {
+  return (
+    <button
+      type="button"
+      className={`chip chip-${kind}${active ? ' chip-active' : ''}`}
+      onClick={onClick}
+      aria-pressed={active}
+    >
+      {icon && <span aria-hidden="true">{icon}</span>}
+      {count !== undefined ? `${count} ${label}` : label}
+    </button>
+  )
+}
+
 export default function ResultsDisplay({ summary, results }) {
+  const [filter, setFilter] = useState('all')
+  const [manualOpen, setManualOpen] = useState(false)
+
   if (!results?.length) return null
 
-  const grouped = GROUPS.map((g) => ({
+  // Unscored rows are routed out of the main grid, not discarded: every row
+  // still went through the agent, and the backend's unknown handling is
+  // untouched. This is purely a decision about what to surface first.
+  const scored = results.filter((r) => r.status !== 'unknown')
+  const manual = results.filter((r) => r.status === 'unknown')
+
+  const visible = filter === 'all' ? scored : scored.filter((r) => r.status === filter)
+  const grouped = SCORED.map((g) => ({
     ...g,
-    items: results.filter((r) => r.status === g.status),
+    items: visible.filter((r) => r.status === g.status),
   })).filter((g) => g.items.length > 0)
+
+  const showManual = manualOpen || filter === 'unknown'
+
+  const pick = (next) => {
+    setFilter((cur) => (cur === next ? 'all' : next))
+    if (next === 'unknown') setManualOpen(true)
+  }
 
   return (
     <section className="panel">
       <div className="panel-head">
         <h2>Results</h2>
-        <div className="summary-strip">
-          <span className="chip chip-critical">🚨 {summary.critical} critical</span>
-          <span className="chip chip-warning">⚠️ {summary.warning} warning</span>
-          <span className="chip chip-normal">✓ {summary.normal} normal</span>
-          {summary.unknown > 0 && (
-            <span className="chip chip-unknown">? {summary.unknown} unknown</span>
+        <div className="summary-strip" role="group" aria-label="Filter results by severity">
+          <FilterChip
+            kind="all"
+            label="All"
+            active={filter === 'all'}
+            onClick={() => setFilter('all')}
+          />
+          <FilterChip
+            kind="critical" icon="🚨" count={summary.critical} label="critical"
+            active={filter === 'critical'} onClick={() => pick('critical')}
+          />
+          <FilterChip
+            kind="warning" icon="⚠️" count={summary.warning} label="warning"
+            active={filter === 'warning'} onClick={() => pick('warning')}
+          />
+          <FilterChip
+            kind="normal" icon="✓" count={summary.normal} label="normal"
+            active={filter === 'normal'} onClick={() => pick('normal')}
+          />
+          {manual.length > 0 && (
+            <FilterChip
+              kind="unknown" icon="?" count={manual.length} label="manual"
+              active={filter === 'unknown'} onClick={() => pick('unknown')}
+            />
           )}
         </div>
       </div>
 
-      {grouped.map((group) => (
-        <div className="group" key={group.status}>
-          <h3 className={`group-title group-${group.status}`}>
-            <span aria-hidden="true">{group.icon}</span> {group.title}
-            <span className="group-count">{group.items.length}</span>
-          </h3>
-          <div className="card-grid">
-            {group.items.map((r, i) => (
-              <ResultCard key={`${r.test_name}-${i}`} result={r} />
-            ))}
+      {grouped.length === 0 && filter !== 'unknown' && (
+        <p className="hint empty-note">No results in this severity.</p>
+      )}
+
+      {filter !== 'unknown' &&
+        grouped.map((group) => (
+          <div className="group" key={group.status}>
+            <h3 className={`group-title group-${group.status}`}>
+              <span aria-hidden="true">{group.icon}</span> {group.title}
+              <span className="group-count">{group.items.length}</span>
+            </h3>
+            <div className="card-grid">
+              {group.items.map((r, i) => (
+                <ResultCard key={`${r.test_name}-${i}`} result={r} />
+              ))}
+            </div>
+          </div>
+        ))}
+
+      {manual.length > 0 && (
+        <div className={`manual${showManual ? ' manual-open' : ''}`}>
+          <button
+            type="button"
+            className="manual-toggle"
+            onClick={() => setManualOpen((v) => !v)}
+            aria-expanded={showManual}
+          >
+            <span className="chevron" aria-hidden="true">›</span>
+            <span className="manual-title">Requires manual review ({manual.length})</span>
+            <span className="manual-sub">
+              {manual.length} result{manual.length === 1 ? '' : 's'} couldn&rsquo;t be
+              scored against a reference range and {manual.length === 1 ? 'is' : 'are'}{' '}
+              routed for manual clinician review.
+            </span>
+          </button>
+
+          {/* Collapsed with a 0fr/1fr grid row rather than `hidden`, so the
+              section can animate open instead of snapping. */}
+          <div className="manual-body" aria-hidden={!showManual}>
+            <div className="manual-body-inner">
+              <div className="card-grid">
+                {manual.map((r, i) => (
+                  <ResultCard key={`manual-${r.test_name}-${i}`} result={r} />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      ))}
+      )}
     </section>
   )
 }

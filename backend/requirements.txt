@@ -9,6 +9,11 @@ mcp
 
 # Agent orchestration
 langgraph
+langchain-core
 
 # LLM provider: Google Gemini (free tier)
 google-genai
+langchain-google-genai
+
+# Verification scripts
+httpx

@@ -13,6 +13,11 @@ over MCP, and Google Gemini writes the human-readable explanation on top.
 
 ![The app](docs/screenshots/app-full.png)
 
+The UI ships with a **sliding light/dark theme toggle** in the header. Your choice is
+remembered across reloads; with no saved choice it follows your OS setting.
+
+![Dark theme](docs/screenshots/dark-theme.png)
+
 ---
 
 ## Why this design
@@ -390,6 +395,7 @@ curl -s -X POST http://127.0.0.1:8000/analyze_labs \
 │       ├── api.js
 │       ├── styles.css
 │       └── components/
+│           ├── ThemeToggle.jsx     Sliding light/dark switch
 │           ├── LabInput.jsx        Manual entry + CSV upload + Load example
 │           ├── ResultsDisplay.jsx  Grouping, filter chips, manual-review section
 │           ├── SeverityBadge.jsx   Red / Yellow / Green / Grey
@@ -420,14 +426,30 @@ exercise the `unknown` path against real data.
 
 ---
 
-## Accessibility
+## Theming and accessibility
 
-Severity colours are contrast-checked against their tinted backgrounds and clear
-WCAG AA: warning `#7d4a00` (7.0:1), critical `#a81c1c` (6.1:1), normal `#12653d`
-(6.4:1). Filter chips are real buttons with `aria-pressed`, the manual-review toggle
-reports `aria-expanded`, and a `prefers-reduced-motion` block drops all movement while
-keeping the layout intact.
+**Light and dark themes.** The whole stylesheet is tokenised, so dark mode is a
+complete palette swap rather than a patch — severity tints, gauge zone fills, the
+marker, tags, shadows and the sticky banner all have dark counterparts. The theme is
+applied to `<html>` before first paint by a small inline script in `index.html`, so
+dark-mode users never see a flash of the light palette while React mounts. Every
+`localStorage` access is guarded, so a private window degrades to the OS preference
+instead of throwing.
+
+**Contrast.** Severity colours clear WCAG AA against their tinted backgrounds in both
+themes — in light, warning `#7d4a00` (7.0:1), critical `#a81c1c` (6.1:1), normal
+`#12653d` (6.4:1); dark inverts the relationship, using a bright foreground on a deep
+tint.
+
+**Semantics and motion.** The theme switch is a real `role="switch"` button with
+`aria-checked`, filter chips are buttons with `aria-pressed`, and the manual-review
+toggle reports `aria-expanded`. A `prefers-reduced-motion` block drops all movement
+while keeping the layout intact.
 
 ---
 
 **Decision support, not a diagnosis.**
+
+---
+
+## Developed By: Arunabha Dutta

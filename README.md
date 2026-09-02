@@ -1,6 +1,6 @@
 # Clinical Lab Triage Agent
 
-CLICK TO VIEW THE LIVE DEPLOYED WEB APP: https://aragen-hackathon-genai-full-stack-i552.onrender.com/
+CLICK TO VIEW THE LIVE DEPLOYED WEB APP: https://aragen-hackathon-gen-ai-full-stack.vercel.app/
 
 A full-stack clinical lab triage agent: deterministic rules classify every lab value,
 a real MCP server exposes those rules as tools, a LangGraph agent calls them **only**

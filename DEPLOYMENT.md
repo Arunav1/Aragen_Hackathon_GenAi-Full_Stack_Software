@@ -13,6 +13,21 @@ VM. The **frontend** is a static bundle and can go anywhere.
 
 ---
 
+## Fastest path — one-click deploy
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Arunav1/Aragen_Hackathon_GenAi-Full_Stack_Software)
+
+Or paste this into your browser:
+
+```
+https://render.com/deploy?repo=https://github.com/Arunav1/Aragen_Hackathon_GenAi-Full_Stack_Software
+```
+
+Sign in with GitHub → Render reads `render.yaml` → paste `GEMINI_API_KEY` →
+**Apply**. That is the entire process; every other value is already declared.
+
+---
+
 ## Option A — Render, ONE service (recommended)
 
 The API process also serves the built frontend, so the page and the API share an

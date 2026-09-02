@@ -96,7 +96,12 @@ Open http://localhost:5173 and click **Load example**, then **Analyze**. Or clic
 
 ## Deployment
 
-See **[DEPLOYMENT.md](DEPLOYMENT.md)**. The repo ships a Render blueprint
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Arunav1/Aragen_Hackathon_GenAi-Full_Stack_Software)
+
+One click, then paste your `GEMINI_API_KEY` when prompted. Render reads
+[`render.yaml`](render.yaml) and builds the whole app as a single service.
+
+See **[DEPLOYMENT.md](DEPLOYMENT.md)** for the details and alternatives. The repo ships a Render blueprint
 ([`render.yaml`](render.yaml)) that deploys the whole app as **one service**: a
 multi-stage [`Dockerfile`](Dockerfile) builds the React frontend and serves it from
 the same FastAPI process that exposes the API. Same origin means no

@@ -121,7 +121,7 @@ def _get_model():
     except ImportError as exc:
         return None, f"langchain-google-genai is not installed: {exc}"
 
-    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    model_name = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
     try:
         model = ChatGoogleGenerativeAI(
             model=model_name,
@@ -146,7 +146,7 @@ async def explain_batch(
     """
     meta: dict[str, Any] = {
         "provider": "google-gemini",
-        "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        "model": os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
         "batched": True,
         "attempts": 0,
         "ok": False,

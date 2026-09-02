@@ -1,5 +1,7 @@
 # Clinical Lab Triage Agent
 
+CLICK TO VIEW THE LIVE DEPLOYED WEB APP: https://aragen-hackathon-genai-full-stack-i552.onrender.com/
+
 A full-stack clinical lab triage agent: deterministic rules classify every lab value,
 a real MCP server exposes those rules as tools, a LangGraph agent calls them **only**
 over MCP, and Google Gemini writes the human-readable explanation on top.

@@ -1,0 +1,17 @@
+{
+    "title": "Laboratory Test Results Dataset",
+    "id": "pinar-topuz/lab-test-results",
+    "licenses": [
+        {
+            "name": "CC0-1.0"
+        }
+    ],
+    "subtitle": "A public dataset containing anonymized laboratory test results with reference ranges and status information.",
+    "description": "This dataset contains anonymized laboratory test results. \nIt includes various biochemical, hematological, and urinalysis parameters with their respective units, reference ranges, and status evaluations.\nThe dataset is suitable for data analysis, visualization, and machine learning applications such as anomaly detection, predictive modeling, and statistical analysis.\n\n### Columns\n- Date: Date of the test\n- Test_Name: Name of the laboratory test\n- Result: Measured value\n- Unit: Unit of measurement\n- Reference_Range: Reference interval\n- Status: Status of the result (Normal, High, Low)\n- Comment: Medical comment or interpretation\n- Min_Reference: Minimum reference value\n- Max_Reference: Maximum reference value\n- Unit_Description: Detailed description of the unit\n- Recommended_Followup: Suggested next steps or medical follow-up\n\n### License\nThis dataset is released under the CC0 1.0 Public Domain Dedication license.\n",
+    "resources": [
+        {
+            "path": "lab_test_results_public.csv",
+            "description": "Anonymized laboratory test results dataset in CSV format."
+        }
+    ]
+}

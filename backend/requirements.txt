@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+
+# Real MCP server + client transport
+fastmcp
+mcp
+
+# Agent orchestration
+langgraph
+
+# LLM provider: Google Gemini (free tier)
+google-genai

@@ -97,7 +97,9 @@ export default function LabInput({ onAnalyze, loading }) {
     setCsvError(error)
     if (!error) {
       setRows(parsed.length ? parsed : [{ ...BLANK }])
-      setMode('manual')
+      // Stay on the CSV tab: switching back to manual here would unmount the
+      // "Loaded N rows" confirmation before anyone could read it. The parsed
+      // rows are editable in the grid below either way.
     }
   }
 

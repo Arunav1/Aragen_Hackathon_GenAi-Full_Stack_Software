@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
@@ -121,7 +122,7 @@ def _get_model():
     except ImportError as exc:
         return None, f"langchain-google-genai is not installed: {exc}"
 
-    model_name = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+    model_name = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
     try:
         model = ChatGoogleGenerativeAI(
             model=model_name,
@@ -133,10 +134,25 @@ def _get_model():
         return None, f"could not initialise Gemini model: {exc}"
 
 
+def _retry_delay(error: str, attempt: int) -> float:
+    """Back off harder on a quota error than on a transient failure.
+
+    Gemini's free tier answers 429 RESOURCE_EXHAUSTED with a retryDelay, often
+    around a minute. Reusing the ordinary one-second backoff there just burns
+    both attempts, so a rate-limit error waits long enough to matter.
+    """
+    if "RESOURCE_EXHAUSTED" in error or "429" in error:
+        match = re.search(r"retry in ([0-9.]+)s", error)
+        if match:
+            return min(float(match.group(1)) + 1.0, 65.0)
+        return 20.0 * attempt
+    return 1.0 * attempt
+
+
 async def explain_batch(
     results: list[dict[str, Any]],
     panels: list[dict[str, Any]],
-    attempts: int = 2,
+    attempts: int = 3,
 ) -> tuple[dict[int, str], dict[int, str], dict[str, Any]]:
     """One batched structured Gemini call for all results and panels.
 
@@ -146,7 +162,7 @@ async def explain_batch(
     """
     meta: dict[str, Any] = {
         "provider": "google-gemini",
-        "model": os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
+        "model": os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite"),
         "batched": True,
         "attempts": 0,
         "ok": False,
@@ -190,8 +206,9 @@ async def explain_batch(
             return by_result, by_panel, meta
         except Exception as exc:
             last_error = f"{type(exc).__name__}: {exc}"
+            meta["rate_limited"] = "RESOURCE_EXHAUSTED" in last_error
             if attempt < attempts:
-                await asyncio.sleep(1.0 * attempt)
+                await asyncio.sleep(_retry_delay(last_error, attempt))
 
     meta["error"] = last_error
     return {}, {}, meta

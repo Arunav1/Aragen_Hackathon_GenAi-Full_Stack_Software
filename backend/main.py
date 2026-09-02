@@ -187,7 +187,7 @@ async def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "llm_configured": bool(key and key != "your_gemini_api_key_here"),
-        "llm_model": os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
+        "llm_model": os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite"),
         "disclaimer": DISCLAIMER,
     }
 
